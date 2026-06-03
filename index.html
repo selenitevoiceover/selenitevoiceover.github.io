@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Selenite Voice Over</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:       #262626;
+      --lime:     #c7f438;
+      --magenta:  #d63493;
+      --white:    #f5f5f0;
+      --mid:      #3a3a3a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* ── CRYSTAL BG DECORATION ── */
+    .crystal-bg {
+      position: fixed;
+      right: -8vw;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38vw;
+      max-width: 520px;
+      opacity: 0.07;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 4rem;
+      background: linear-gradient(to bottom, rgba(38,38,38,0.95) 0%, transparent 100%);
+    }
+
+    nav .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: var(--lime);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    nav ul a {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    nav ul a:hover { opacity: 1; color: var(--lime); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: center;
+      gap: 4rem;
+      padding: 8rem 4rem 4rem;
+      z-index: 1;
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-portrait-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      opacity: 0;
+      animation: fadeUp 0.9s ease forwards 0.9s;
+    }
+
+    .hero-portrait {
+      width: clamp(220px, 22vw, 360px);
+      aspect-ratio: 3/4;
+      border-radius: 3px;
+      object-fit: cover;
+      border: 1px solid rgba(199,244,56,0.2);
+      box-shadow: 0 0 60px rgba(199,244,56,0.08), 0 0 120px rgba(214,52,147,0.05);
+    }
+
+    .hero-portrait-placeholder {
+      width: clamp(220px, 22vw, 360px);
+      aspect-ratio: 3/4;
+      border-radius: 3px;
+      border: 1px dashed rgba(199,244,56,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      color: rgba(245,245,240,0.3);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: rgba(199,244,56,0.02);
+    }
+
+    .hero-portrait-placeholder svg {
+      width: 48px;
+      height: 48px;
+      opacity: 0.3;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--magenta);
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 0.2s;
+    }
+
+    .hero-logo {
+      width: min(360px, 55vw);
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.9s ease forwards 0.4s;
+    }
+
+    .hero-tagline {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 4.5vw, 4rem);
+      line-height: 1.15;
+      opacity: 0;
+      animation: fadeUp 0.9s ease forwards 0.6s;
+    }
+
+    .hero-tagline em {
+      font-style: italic;
+      color: var(--lime);
+    }
+
+    .hero-sub {
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      line-height: 1.7;
+      opacity: 0;
+      color: rgba(245,245,240,0.65);
+      animation: fadeUp 0.9s ease forwards 0.8s;
+    }
+
+    .hero-cta {
+      margin-top: 2.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.9s ease forwards 1s;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      border-radius: 2px;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      transition: all 0.25s;
+    }
+
+    .btn-primary {
+      background: var(--lime);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: #d8ff4a;
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      border: 1px solid rgba(214,52,147,0.5);
+      color: var(--magenta);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--magenta);
+      background: rgba(214,52,147,0.08);
+      transform: translateY(-2px);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--magenta), transparent);
+      opacity: 0.3;
+      margin: 0 4rem;
+      width: calc(100% - 8rem);
+    }
+
+    /* ── SECTION BASE ── */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 5rem 4rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--magenta);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── ABOUT ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 4rem;
+      align-items: center;
+      width: 100%;
+    }
+
+    .about-text p {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: rgba(245,245,240,0.75);
+      margin-bottom: 1rem;
+    }
+
+    .about-text p strong {
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    .about-video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid rgba(199,244,56,0.15);
+      box-shadow: 0 0 60px rgba(199,244,56,0.06);
+    }
+
+    .about-video-link {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .about-video-link img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .about-video-link:hover img {
+      transform: scale(1.03);
+    }
+
+    .about-video-play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+
+    .about-video-link:hover .about-video-play {
+      opacity: 0.85;
+    }
+
+    .about-video-label {
+      position: absolute;
+      bottom: 0.75rem;
+      right: 0.75rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: white;
+      background: rgba(0,0,0,0.5);
+      padding: 0.3rem 0.6rem;
+      border-radius: 2px;
+    }
+
+    .about {
+      padding: 5rem 4rem;
+    }
+    .niche {
+      background: var(--mid);
+      border-left: 3px solid var(--lime);
+      padding: 4rem;
+    }
+
+    .niche-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .niche-card {
+      padding: 1.5rem;
+      border: 1px solid rgba(199,244,56,0.15);
+      border-radius: 2px;
+      transition: border-color 0.3s, background 0.3s;
+    }
+
+    .niche-card:hover {
+      border-color: rgba(199,244,56,0.4);
+      background: rgba(199,244,56,0.04);
+    }
+
+    .niche-card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .niche-card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--lime);
+    }
+
+    .niche-card p {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: rgba(245,245,240,0.6);
+    }
+
+    /* ── SAMPLES ── */
+    .samples {}
+
+    .samples-intro {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: rgba(245,245,240,0.65);
+      max-width: 560px;
+      margin-bottom: 2.5rem;
+    }
+
+    .samples-links {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 600px;
+    }
+
+    .sample-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid rgba(245,245,240,0.1);
+      border-radius: 2px;
+      text-decoration: none;
+      color: var(--white);
+      transition: all 0.25s;
+      gap: 1rem;
+    }
+
+    .sample-row:hover {
+      border-color: var(--magenta);
+      background: rgba(214,52,147,0.06);
+      transform: translateX(4px);
+    }
+
+    .sample-row-label {
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+    }
+
+    .sample-row-type {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--magenta);
+      opacity: 0.8;
+    }
+
+    .sample-arrow {
+      font-size: 1rem;
+      color: var(--lime);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: all 0.25s;
+    }
+
+    .sample-row:hover .sample-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* ── CONTACT ── */
+    .contact {
+      text-align: center;
+      padding: 6rem 4rem;
+    }
+
+    .contact .section-label { justify-content: center; display: flex; }
+
+    .contact-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .contact-title em {
+      color: var(--lime);
+      font-style: italic;
+    }
+
+    .contact-sub {
+      font-size: 0.95rem;
+      color: rgba(245,245,240,0.55);
+      margin-bottom: 2.5rem;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+    }
+
+    .contact-email {
+      display: inline-block;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      color: var(--magenta);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(214,52,147,0.3);
+      padding-bottom: 0.2rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .contact-email:hover {
+      color: var(--lime);
+      border-color: var(--lime);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 2rem 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(245,245,240,0.07);
+      font-size: 0.75rem;
+      color: rgba(245,245,240,0.3);
+      letter-spacing: 0.1em;
+    }
+
+    footer a {
+      color: rgba(245,245,240,0.3);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    footer a:hover { color: var(--lime); }
+
+    .footer-links { display: flex; gap: 1.5rem; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-16px); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
+      nav ul { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
+      .hero-portrait-wrap { display: none; }
+      section { padding: 3.5rem 1.5rem; }
+      .niche { padding: 2.5rem 1.5rem; }
+      .contact { padding: 4rem 1.5rem; }
+      footer { padding: 1.5rem; flex-direction: column; gap: 0.75rem; text-align: center; }
+      .about-grid { grid-template-columns: 1fr; }
+      .crystal-bg { display: none; }
+      .divider { margin: 0 1.5rem; width: calc(100% - 3rem); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating crystal background -->
+  <img class="crystal-bg" src="Yellow_Selenite_Rock_Pattern_RGB.png" alt="" aria-hidden="true" />
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Selenite Voice Over</a>
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#niche">Niche</a></li>
+      <li><a href="#samples">Samples</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-eyebrow">Voice Over Artist · Audiobook Narrator</p>
+      <img class="hero-logo" src="SeleniteLogoCut.png" alt="Selenite Voice Over" />
+      <h1 class="hero-tagline">
+        Words that land.<br />
+        <em>Warmth you can hear.</em>
+      </h1>
+      <p class="hero-sub">
+        I'm Jen, and I provide audiobook narration for business and self-help books that don't take themselves too seriously — and a voice that's been trained on local radio, audio comedy skits, and making tech comms sound less... like that.
+      </p>
+      <div class="hero-cta">
+        <a href="#samples" class="btn btn-primary">Hear Samples</a>
+        <a href="#contact" class="btn btn-outline">Work Together</a>
+      </div>
+    </div>
+    <div class="hero-portrait-wrap">
+      <img class="hero-portrait" src="JenHeadshot.JPG" alt="Jen, Selenite Voice Over" />
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ABOUT -->
+  <section class="about" id="about">
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="section-label">About</p>
+        <h2 class="section-title">Unusual voice.<br />Unusual warmth.</h2>
+        <p>
+          Any voice is a radio voice if it's been on the radio — and this one has, many times. <strong>Selenite VO</strong> brings a distinctive, warm, grounded sound to audiobooks that want to connect rather than lecture.
+        </p>
+        <p>
+          Not the big announcer. Not the corporate read. Something more like <strong>an interesting person talking directly to you</strong> — which, it turns out, is exactly what listeners actually want.
+        </p>
+      </div>
+      <div class="about-video-wrap">
+        <a href="https://www.youtube.com/watch?v=TYC-vaflyZw" target="_blank" rel="noopener" class="about-video-link">
+          <img src="https://img.youtube.com/vi/TYC-vaflyZw/maxresdefault.jpg" alt="Watch on YouTube" />
+          <div class="about-video-play">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
+              <circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.6)"/>
+              <polygon points="10,8 18,12 10,16" fill="white"/>
+            </svg>
+          </div>
+          <span class="about-video-label">Watch on YouTube</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NICHE -->
+  <section class="niche" id="niche">
+    <p class="section-label">Niche</p>
+    <h2 class="section-title">Business & self-help books<br />that don't take themselves too seriously.</h2>
+    <div class="niche-cards">
+      <div class="niche-card">
+        <div class="niche-card-icon">📚</div>
+        <h3>No-BS Business Books</h3>
+        <p>Your smart ideas, my accessible delivery, zero corporate drone. For no-nonsense information that needs nothing less than a sharp, engaging voice.</p>
+      </div>
+      <div class="niche-card">
+        <div class="niche-card-icon">🧠</div>
+        <h3>Self-Help & Personal Dev</h3>
+        <p>A warm and credible voice that lets your wit shine through. Like listening to advice from a friend who's actually been through it.</p>
+      </div>
+      <div class="niche-card">
+        <div class="niche-card-icon">🎙️</div>
+        <h3>Indie Authors & ACX</h3>
+        <p>Working directly with authors and publishers on Audible, Findaway, and beyond.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAMPLES -->
+  <section class="samples" id="samples">
+    <p class="section-label">Listen</p>
+    <h2 class="section-title">Hear the voice.</h2>
+    <p class="samples-intro">
+      Samples available on YouTube — including narration demos, shorts, and full audiobook excerpts. More on the way.
+    </p>
+    <div class="samples-links">
+      <a href="https://youtube.com/@SeleniteVoiceOver" target="_blank" rel="noopener" class="sample-row">
+        <span class="sample-row-label">YouTube Channel — Narration Demos & Shorts</span>
+        <span class="sample-row-type">YouTube →</span>
+        <span class="sample-arrow">→</span>
+      </a>
+      <a href="https://www.linkedin.com/company/selenite-voice-over/" target="_blank" rel="noopener" class="sample-row">
+        <span class="sample-row-label">LinkedIn — Connect & Collaborate</span>
+        <span class="sample-row-type">LinkedIn →</span>
+        <span class="sample-arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <p class="section-label">Get in Touch</p>
+    <h2 class="contact-title">Got a book that needs<br />a <em>real</em> voice?</h2>
+    <p class="contact-sub">
+      Whether you're an author, publisher, or producer — let's talk about bringing your words to life.
+    </p>
+    <a href="mailto:selenitevoiceover@gmail.com" class="contact-email">selenitevoiceover@gmail.com</a>
+    <br /><br />
+    <a href="mailto:selenitevoiceover@gmail.com" class="btn btn-primary" style="margin-top:1rem;">Send an Enquiry</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>© 2026 Selenite Voice Over</span>
+    <div class="footer-links">
+      <a href="https://youtube.com/@SeleniteVoiceOver" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://www.linkedin.com/company/selenite-voice-over/" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+  </footer>
+
+</body>
+</html>
